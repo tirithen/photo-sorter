@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 const rimraf = require('rimraf');
 const winston = require('winston');
