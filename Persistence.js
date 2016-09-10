@@ -1,10 +1,11 @@
 const SSHClient = require('ssh2').Client;
 const scp = require('scp2').scp;
-const sshUrl = require('ssh-url');
+const urlParse = require('url-parse');
 const fs = require('fs');
 const fsextra = require('fs-extra');
 const dirname = require('path').dirname;
 const mkdirp = require('mkdirp');
+const homedir = require('homedir');
 
 class Persistence {
   constructor(destination) {
@@ -25,7 +26,7 @@ class Persistence {
   }
 
   copy(from, to) {
-    const toPath = this.getPathFromRemotePath(to);
+    const toPath = this.getPathFromUrl(to);
     return new Promise((resolve, reject) => {
       this.createParentDirectory(dirname(toPath)).then(() => {
         this.copyLocalOrRemote(from, toPath).then(resolve, reject);
@@ -36,13 +37,16 @@ class Persistence {
   move(from, to) {
     return new Promise((resolve, reject) => {
       if (from.match(/\w+@\w+/)) {
-        this.sshConnection.exec(`mv ${from} ${to}`, (error) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
+        this.sshConnection.exec(
+          `mv ${this.getPathFromUrl(from)} ${this.getPathFromUrl(to)}`,
+          (error) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
           }
-        });
+        );
       } else {
         fsextra.move(from, to, { clobber: true }, (error) => {
           if (error) {
@@ -58,7 +62,7 @@ class Persistence {
   rmdir(path) {
     return new Promise((resolve, reject) => {
       if (this.sshConfig) {
-        this.sshConnection.exec(`rmdir ${path}`, (error) => {
+        this.sshConnection.exec(`rmdir ${this.getPathFromUrl(path)}`, (error) => {
           if (error) {
             reject(error);
           } else {
@@ -77,11 +81,19 @@ class Persistence {
     });
   }
 
+  getPathFromUrl(url) {
+    if (this.sshConfig) {
+      return urlParse(url).pathname;
+    }
+
+    return url;
+  }
+
   copyLocalOrRemote(from, to) {
     return new Promise((resolve, reject) => {
       if (this.sshConfig) {
         const config = JSON.parse(JSON.stringify(this.sshConfig));
-        config.path += `/${to}`;
+        config.path = to;
         scp(from, config, (error) => {
           if (error) {
             reject(error);
@@ -104,7 +116,7 @@ class Persistence {
   createParentDirectory(path) {
     return new Promise((resolve, reject) => {
       if (this.sshConfig) {
-        this.sshConnection.exec(`mkdir -p ${path}`, (error) => {
+        this.sshConnection.exec(`mkdir -p ${this.getPathFromUrl(path)}`, (error) => {
           if (error) {
             reject(error);
           } else {
@@ -123,38 +135,31 @@ class Persistence {
     });
   }
 
-  getPathFromRemotePath(path) {
-    const parts = path.split(':');
-
-    if (parts.length === 2) {
-      return parts[1];
+  parseDestination(destination) {
+    if (destination.match(/\w+@\w+/) && !destination.match(/^ssh:\/\//)) {
+      destination = `ssh://${destination}`;
     }
 
-    return parts[0];
-  }
+    destination = destination.replace(/^(.+?@.+?):(.+)$/, '$1$2');
 
-  parseDestination(destination) {
-    let sshConfig = sshUrl.parse(destination);
+    let sshConfig = urlParse(destination);
     let privateKey;
 
-    if (sshConfig && !sshConfig.user) {
+    if (sshConfig && (!sshConfig.username || !sshConfig.hostname)) {
       sshConfig = undefined;
-    } else {
+    } else if (sshConfig && sshConfig.username && !sshConfig.password) {
       try {
-        privateKey = fs.readFileSync(process.env.SSH_PRIVATE_KEY || '~/.ssh/id_rsa');
+        privateKey = fs.readFileSync(
+          process.env.SSH_PRIVATE_KEY || `${homedir()}/.ssh/id_rsa`
+        ).toString();
       } catch (error) {}
     }
 
-    if (sshConfig && !privateKey) {
-      throw new Error(
-        'No private SSH key file found, make sure to set environment variable SSH_PRIVATE_KEY'
-      );
-    }
-
-    if (sshConfig && privateKey) {
+    if (sshConfig) {
       this.sshConfig = {
         privateKey,
-        username: sshConfig.user,
+        username: sshConfig.username,
+        password: sshConfig.password,
         host: sshConfig.hostname,
         path: sshConfig.pathname
       };
