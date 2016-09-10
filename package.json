@@ -1,0 +1,40 @@
+{
+  "name": "photo-sorter",
+  "version": "0.1.0",
+  "description": "Take photos in a directory and sort them into date based directory structure (local or remote via ssh)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "photo-sorter": "./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tirithen/photo-sorter.git"
+  },
+  "keywords": [
+    "photo",
+    "jpeg",
+    "video",
+    "camera",
+    "sort"
+  ],
+  "author": "Fredrik Söderström <fredrik.soderstrom@mojlighetsministeriet.se>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/tirithen/photo-sorter/issues"
+  },
+  "homepage": "https://github.com/tirithen/photo-sorter#readme",
+  "dependencies": {
+    "exif": "^0.6.0",
+    "fs-extra": "^0.30.0",
+    "mkdirp": "^0.5.1",
+    "rimraf": "^2.5.4",
+    "scp2": "^0.5.0",
+    "ssh-url": "^0.1.5",
+    "ssh2": "^0.5.1",
+    "walk": "^2.3.9",
+    "winston": "^2.2.0"
+  }
+}
