@@ -58,7 +58,7 @@ persistence.connect().then(() => {
         }
 
         persistence.copy(sourceFilename, destination).then(() => {
-          winston.info(`Copied "${sourceFilename}"`);
+          winston.info(`Copied "${sourceFilename}" to "${destination}"`);
           resolve();
         }, reject);
       }, reject);
