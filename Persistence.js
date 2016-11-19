@@ -2,7 +2,7 @@ const SSHClient = require('ssh2').Client;
 const scp = require('scp2').scp;
 const urlParse = require('url-parse');
 const fs = require('fs');
-const fsextra = require('fs-extra');
+const exec = require('child_process').exec;
 const dirname = require('path').dirname;
 const mkdirp = require('mkdirp');
 const homedir = require('homedir');
@@ -34,11 +34,11 @@ class Persistence {
     });
   }
 
-  move(from, to) {
+  merge(from, to) {
     return new Promise((resolve, reject) => {
       if (from.match(/\w+@\w+/)) {
         this.sshConnection.exec(
-          `mv ${this.getPathFromUrl(from)} ${this.getPathFromUrl(to)}`,
+          `rsync -aHAX ${this.getPathFromUrl(from)} ${this.getPathFromUrl(to)}`,
           (error) => {
             if (error) {
               reject(error);
@@ -48,13 +48,16 @@ class Persistence {
           }
         );
       } else {
-        fsextra.move(from, to, { clobber: true }, (error) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
+        exec(
+          `rsync -aHAX ${this.getPathFromUrl(from)} ${this.getPathFromUrl(to)}`,
+          (error) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
           }
-        });
+        );
       }
     });
   }

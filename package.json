@@ -28,7 +28,6 @@
   "homepage": "https://github.com/tirithen/photo-sorter#readme",
   "dependencies": {
     "exif": "^0.6.0",
-    "fs-extra": "^0.30.0",
     "homedir": "^0.6.0",
     "mkdirp": "^0.5.1",
     "rimraf": "^2.5.4",

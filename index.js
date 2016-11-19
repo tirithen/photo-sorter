@@ -67,8 +67,9 @@ persistence.connect().then(() => {
     Promise.all(dates.map((date) => {
       const from = `${destinationTempPath}/${date}`;
       const to = `${destinationPath}/${date}`;
-      return persistence.move(from, to);
+      return persistence.merge(from, to);
     })).then(() => {
+      // TODO: also delete non-empty temp directory 
       persistence.rmdir(destinationTempPath).then(() => {
         winston.info(`Finished sorting files into "${destinationPath}"`);
         process.exit(0);
